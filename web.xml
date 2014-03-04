@@ -135,6 +135,11 @@
     	<servlet-class>ece1779.ec2.UserLogin</servlet-class>
   	</servlet>
  
+  	<servlet>
+    	<servlet-name>UserImageAndTransforms</servlet-name>
+    	<servlet-class>ece1779.ec2.UserImageAndTransforms</servlet-class>
+  	</servlet>
+ 
  	<servlet>
     	<servlet-name>UserImages</servlet-name>
     	<servlet-class>ece1779.ec2.UserImages</servlet-class>
@@ -218,6 +223,11 @@
     <servlet-mapping>
         <servlet-name>UserFileUpload</servlet-name>
         <url-pattern>/servlet/UserFileUpload</url-pattern>
+    </servlet-mapping>
+ 
+     <servlet-mapping>
+        <servlet-name>UserImageAndTransforms</servlet-name>
+        <url-pattern>/servlet/UserImageAndTransforms</url-pattern>
     </servlet-mapping>
     
     <servlet-mapping>

@@ -37,7 +37,7 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 import org.im4java.core.*;
 
 
-public class UserImages extends HttpServlet {
+public class UserImageAndTransforms extends HttpServlet {
 	
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 	throws IOException, ServletException {
@@ -84,6 +84,7 @@ public class UserImages extends HttpServlet {
 
         	// Create a factory for disk-based file items
         	FileItemFactory factory = new DiskFileItemFactory();
+        	String imageId = request.getParameter("imageid");
 
     		String pageTitle = "User Images";
    
@@ -96,10 +97,10 @@ public class UserImages extends HttpServlet {
         	response.setContentType("text/html");
             
 			out.println("<html>");
-			out.println("<hl>Uploaded images for - " +username+"</hl><br>");
+			out.println("<hl>Displaying Selected Image and Transforms for - " +username+"</hl><br>");
 			out.println("<body>");
 			
-            getImages(username, out);
+			getImageAndTransforms(username, imageId, out);
 			//TODO : Display thumbnails...
 			//TODO : add option to click on thumbnail to view image and all its transforms
 			out.println("<br>");
@@ -138,7 +139,7 @@ public class UserImages extends HttpServlet {
     return dbUserID;
 }
     
-    public void getImages(String username, PrintWriter out) {
+    public void getImageAndTransforms(String username, String imageId, PrintWriter out) {
     	Connection con = null;
     	try{
     		String s3_bucket = getServletContext().getAttribute("s3BucketName").toString();
@@ -149,16 +150,21 @@ public class UserImages extends HttpServlet {
     		int userid = getUserId(con, username);
     		if (userid != -1){
         		Statement sqlQuery = con.createStatement();
-        		String sqlGetImage = "select * from images where userId = (?);";
+        		String sqlGetImage = "select * from images where id = (?);";
                 PreparedStatement sqlGetImageStmt = con.prepareStatement(sqlGetImage);
-                sqlGetImageStmt.setInt(1, userid);
+                sqlGetImageStmt.setString(1, imageId);
                 ResultSet result = sqlGetImageStmt.executeQuery();
         		
         		if (result != null){
         			while (result.next()){
-        				int imageId = result.getInt("id");
-        				String imgURL = result.getString("key1");
-        				out.println("<a href=UserImageAndTransforms?imageid=" + imageId +"><img src='" + s3_path + imgURL + "' width='200'/></a><br>");
+        				String key1 = result.getString("key1");
+        				String key2 = result.getString("key2");
+        				String key3 = result.getString("key3");
+        				String key4 = result.getString("key4");
+        				out.println("<img src='" + s3_path + key1 + "'/></a><br>");
+        				out.println("<img src='" + s3_path + key2 + "'/></a><br>");
+        				out.println("<img src='" + s3_path + key3 + "'/></a><br>");
+        				out.println("<img src='" + s3_path + key4 + "'/></a><br>");
         			}
         		}
     		}
