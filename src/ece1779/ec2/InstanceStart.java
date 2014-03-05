@@ -52,6 +52,10 @@ public class InstanceStart extends HttpServlet {
         	RunInstancesRequest request = new RunInstancesRequest(imageId,1,1);
         	request.setKeyName("ece1779winter2014v3");
         	request.withMonitoring(true);
+        	
+        	String securityGroup = "ece1779security";
+        	List<String> securityGroups = Arrays.asList(securityGroup);
+        	request.setSecurityGroupIds(securityGroups);
 
         	RunInstancesResult result = ec2.runInstances(request);
         	Reservation reservation = result.getReservation();
