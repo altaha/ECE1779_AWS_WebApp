@@ -6,10 +6,21 @@ import javax.servlet.*;
 import javax.servlet.http.*;
 import javax.sql.DataSource;
 
+import com.amazonaws.AmazonClientException;
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.services.cloudwatch.AmazonCloudWatch;
+import com.amazonaws.services.cloudwatch.AmazonCloudWatchClient;
+import com.amazonaws.services.cloudwatch.model.*;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Vector;
 
 public class ManagerLogin extends HttpServlet {
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -51,13 +62,10 @@ public class ManagerLogin extends HttpServlet {
 		out.println("  <body>");
 
 		if (loggedIn) {
-			// Get DB connection from pool
 		    out.println("  <h1> Welcome to Manager Controls </h1>");
-		    out.println("  <p> Workers <br />");
-		    //TODO: list workers and their CPU utilization
-		    out.println("  INSERT WORKER INFO HERE...<br />");
-		    printInstancesHealth(out);
-		    out.println("  </p>");
+		    out.println("  <p> Workers </p>");
+		    printInstancesHealth(out); // Get instances and CPU utiliation
+		    out.println("  <br>");
 		    
 		    out.println("  <p>");
 		    out.println("  <form id='pool_frm' name=pool_size action='/ece1779/servlet/ManagerLogin' method='post'>");
@@ -97,9 +105,96 @@ public class ManagerLogin extends HttpServlet {
 	}
 	
 	public void printInstancesHealth(PrintWriter out)
-	{
-		out.println("<table style='width:60%'>");
-		//TODO add print of running instances here...
+			throws IOException {
+		/* print table header */
+    	out.println("<table style='width:60%' border='1'");
+    	out.println("<tr bgcolor='silver'>");
+    	out.println("<td> Instance ID </td>");
+    	out.println("<td> CPU utilization </td>");
+    	out.println("<td> Manage </td>");
+    	out.println("</tr>");
+    	
+    	/* print instances and CPU utilization */
+    	BasicAWSCredentials awsCredentials = (BasicAWSCredentials)getServletContext().getAttribute("AWSCredentials");
+
+        AmazonCloudWatch cw = new AmazonCloudWatchClient(awsCredentials);
+
+    	try {
+    		ListMetricsRequest listMetricsRequest = new ListMetricsRequest();
+        	listMetricsRequest.setMetricName("CPUUtilization");
+        	listMetricsRequest.setNamespace("AWS/EC2");
+
+        	ListMetricsResult result = cw.listMetrics(listMetricsRequest);
+        	java.util.List<Metric> 	metrics = result.getMetrics();
+
+        	for (Metric metric : metrics) {
+        		String namespace = metric.getNamespace();
+        		String metricName = metric.getMetricName();
+        		List<Dimension> dimensions = metric.getDimensions();
+        		
+            	GetMetricStatisticsRequest statisticsRequest = new GetMetricStatisticsRequest();
+            	statisticsRequest.setNamespace(namespace);
+            	statisticsRequest.setMetricName(metricName);
+            	statisticsRequest.setDimensions(dimensions);
+
+            	Date endTime = new Date();
+            	Date startTime = new Date(0);
+            	startTime.setTime(endTime.getTime()-1200000); /* 2 minutes */
+            	statisticsRequest.setStartTime(startTime);
+            	statisticsRequest.setEndTime(endTime);
+            	statisticsRequest.setPeriod(60); /* 60 second granulatiry */
+
+            	Vector<String>statistics = new Vector<String>();
+            	statistics.add("Maximum");
+            	statisticsRequest.setStatistics(statistics);
+            	GetMetricStatisticsResult stats = cw.getMetricStatistics(statisticsRequest);
+            	
+            	/* filter InstanceId dimenstions only */
+            	if (dimensions.isEmpty()==false && dimensions.get(0).getName().equals("InstanceId")
+            			&& stats.getDatapoints().size() >= 1) {
+            		
+            		String instanceId = dimensions.get(0).getValue();
+            		/* get the latest CPU timestamp */
+                	List<Datapoint> dataPoints = stats.getDatapoints();
+                	Date latestTime = new Date(0);
+                	Datapoint latestPoint = null;
+                	for (Datapoint dataPoint : dataPoints) {
+                		if (dataPoint.getTimestamp().after(latestTime)) {
+                			latestTime = dataPoint.getTimestamp();
+                			latestPoint = dataPoint;
+                		}
+                	}
+                	
+                	out.println("<tr>");
+                	out.println("<td> " + instanceId + " </td>");
+                	out.println("<td> " + latestPoint.getMaximum() + " </td>");
+                	/* the manager instance cannot be stopped */
+                	if (dimensions.get(0).getValue().equals("i-7dce8d53")) {
+                		out.println("<td> Main Instance </td>");
+                	} else {
+                		out.println("<td><a href='InstanceStop?" + instanceId + "'>Stop </a></td>");
+                	}
+                	out.println("</tr>");
+            	}
+        	}
+    		
+        } catch (AmazonServiceException ase) {
+            out.println("Caught an AmazonServiceException, which means your request made it "
+                    + "to Amazon EC2, but was rejected with an error response for some reason.");
+            out.println("Error Message:    " + ase.getMessage());
+            out.println("HTTP Status Code: " + ase.getStatusCode());
+            out.println("AWS Error Code:   " + ase.getErrorCode());
+            out.println("Error Type:       " + ase.getErrorType());
+            out.println("Request ID:       " + ase.getRequestId());
+        } catch (AmazonClientException ace) {
+            out.println("Caught an AmazonClientException, which means the client encountered "
+                    + "a serious internal problem while trying to communicate with EC2, "
+                    + "such as not being able to access the network.");
+            out.println("Error Message: " + ace.getMessage());
+        }
+    	finally {
+    		out.println("</table>");
+    	}
 	}
 	
 	public boolean isUserValid(String username, String password)
@@ -113,7 +208,7 @@ public class ManagerLogin extends HttpServlet {
 	    return userValid;
 	}
 
-	// Do this because the servlet uses both post and get
+	/* processes manual scaling post request */
 	public void doPost(HttpServletRequest request, HttpServletResponse response)
 			throws IOException, ServletException
 	{
