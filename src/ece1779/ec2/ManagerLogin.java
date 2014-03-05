@@ -65,8 +65,13 @@ public class ManagerLogin extends HttpServlet {
 		    out.println("  <h1> Welcome to Manager Controls </h1>");
 		    out.println("  <p> Workers </p>");
 		    printInstancesHealth(out); // Get instances and CPU utiliation
-		    out.println("  <br>");
 		    
+		    out.println("  <p>");
+		    out.println("  <form name=add_instance action='/ece1779/servlet/InstanceStart' method='get'>");
+			out.println("  <button type='submit'>Add Worker</button>");
+			out.println("  </p>");
+		    out.println("  <br>");
+
 		    out.println("  <p>");
 		    out.println("  <form id='pool_frm' name=pool_size action='/ece1779/servlet/ManagerLogin' method='post'>");
 		    out.println("  Pool size :");
@@ -149,9 +154,11 @@ public class ManagerLogin extends HttpServlet {
             	statisticsRequest.setStatistics(statistics);
             	GetMetricStatisticsResult stats = cw.getMetricStatistics(statisticsRequest);
             	
-            	/* filter InstanceId dimenstions only */
+            	/* only check metrics with dimension name 'InstanceId' */
             	if (dimensions.isEmpty()==false && dimensions.get(0).getName().equals("InstanceId")
             			&& stats.getDatapoints().size() >= 1) {
+            		
+            		//TODO: filter out terminated instances. Only running (and pending?) instances allowed
             		
             		String instanceId = dimensions.get(0).getValue();
             		/* get the latest CPU timestamp */
