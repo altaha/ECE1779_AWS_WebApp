@@ -23,7 +23,7 @@ import com.amazonaws.services.ec2.model.RunInstancesResult;
 
 
 
-public class StartInstance extends HttpServlet {
+public class InstanceStart extends HttpServlet {
     public void doGet(HttpServletRequest request, HttpServletResponse response)
     throws IOException, ServletException
     {
