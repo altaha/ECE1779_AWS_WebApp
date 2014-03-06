@@ -46,6 +46,14 @@ public class Initialization extends HttpServlet {
     		//store s3 bucket name
     		String s3BucketName = config.getInitParameter("s3BucketName");
     		context.setAttribute("s3BucketName",s3BucketName);
+    		
+    		// start periodic monitoring task
+    		HealthMonitor.cpuHighThreshold = 80;
+    		HealthMonitor.cpuLowThreshold = 20;
+    		HealthMonitor.growRatio = 1;
+    		HealthMonitor.shrinkRatio = 1;
+    		HealthMonitor.enableScaling = 1;
+    		HealthMonitor.startTimer(1000*2); /* 5 second check interval */
 		}
 		catch (Exception ex) {
 		    getServletContext().log("SQLGatewayPool Error: " + ex.getMessage());

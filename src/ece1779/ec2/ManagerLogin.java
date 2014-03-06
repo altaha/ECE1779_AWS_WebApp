@@ -69,22 +69,23 @@ public class ManagerLogin extends HttpServlet {
 		    out.println("  <p>");
 		    out.println("  <form name=add_instance action='/ece1779/servlet/InstanceStart' method='get'>");
 			out.println("  <button type='submit'>Add Worker</button>");
+			out.println("  </form>");
 			out.println("  </p>");
 		    out.println("  <br>");
-
+/*		    
 		    out.println("  <p>");
 		    out.println("  <form id='pool_frm' name=pool_size action='/ece1779/servlet/ManagerLogin' method='post'>");
 		    out.println("  Pool size :");
 			out.println("  <button type='submit' name='poolSize' value='1'>Increase</button>");
 			out.println("  <button type='submit' name='poolSize' value='0'>Decrease</button>");
 			out.println("  </p>");
-			
-			out.println("  <p> Control Params: <br />");
+*/
+			out.println("  <p> Instance Scaling Control Paramseters <br />");
 			out.println("  <form id='control_frm' name='pool_manage' action='/ece1779/servlet/ManagerLogin' method='post'>");
-			out.println("	   CPU Threshold Grow   <input type='text' name='CPUGrow' value='80'/><br />");
-			out.println("	   CPU Threshold Shrink <input type='text' name='CPUShrink' value='20'/><br />");
-			out.println("	   Ratio Pool Expand <input type='text' name='RatioExpand' value='1'/><br />");
-			out.println("	   Ratio Pool Shrink <input type='text' name='RatioShrink' value='1'/><br />");
+			out.println("	   CPU Grow Threshold   <input type='text' name='CPUGrow' value='" + HealthMonitor.cpuHighThreshold + "'/><br />");
+			out.println("	   CPU Shrink Threshold   <input type='text' name='CPUShrink' value='" + HealthMonitor.cpuLowThreshold + "'/><br />");
+			out.println("	   Pool Grow Ratio     <input type='text' name='RatioGrow' value='" + HealthMonitor.growRatio + "'/><br />");
+			out.println("	   Pool Shrink Ratio   <input type='text' name='RatioShrink' value='" + HealthMonitor.shrinkRatio + "'/><br />");
 			out.println("      <input type='submit' value='Send'>");
 			out.println("  </form>");
 			out.println("  </p>");
@@ -215,10 +216,24 @@ public class ManagerLogin extends HttpServlet {
 	    return userValid;
 	}
 
-	/* processes manual scaling post request */
+	/* Process log in and load scaling post requests */
 	public void doPost(HttpServletRequest request, HttpServletResponse response)
 			throws IOException, ServletException
 	{
+		try {
+			int cpuGrowThresh = Integer.parseInt(request.getParameter("CPUGrow"));
+			int cpuShrinkThresh = Integer.parseInt(request.getParameter("CPUShrink"));
+			int ratioGrow = Integer.parseInt(request.getParameter("RatioGrow"));
+			int ratioShrink = Integer.parseInt(request.getParameter("RatioShrink"));
+			
+    		HealthMonitor.cpuHighThreshold = cpuGrowThresh;
+    		HealthMonitor.cpuLowThreshold = cpuShrinkThresh;
+    		HealthMonitor.growRatio = ratioGrow;
+    		HealthMonitor.shrinkRatio = ratioShrink;
+    		HealthMonitor.enableScaling = 1;
+		} catch (NumberFormatException nfe) {
+		}
+
 		doGet(request, response);
 	}
 }
