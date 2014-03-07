@@ -80,6 +80,13 @@ public class ManagerLogin extends HttpServlet {
 			out.println("	   CPU Shrink Threshold   <input type='text' name='CPUShrink' value='" + HealthMonitor.cpuLowThreshold + "'/><br />");
 			out.println("	   Pool Grow Ratio     <input type='text' name='RatioGrow' value='" + HealthMonitor.growRatio + "'/><br />");
 			out.println("	   Pool Shrink Ratio   <input type='text' name='RatioShrink' value='" + HealthMonitor.shrinkRatio + "'/><br />");
+			out.println("	   Status <input type='text' name='MonitorStatus' value='" + HealthMonitor.status + "'/><br />");
+			out.println("	   Status <input type='text' name='MonitorStatusString' value='" + HealthMonitor.statusString + "'/><br />");
+			out.println("	   Enable Load Scaling   <input type='checkbox' name='EnableScaling' value='enabled' ");
+				if  (HealthMonitor.enableScaling == 1)
+					out.println("checked='yes' /><br />");
+				else
+					out.println("/><br />");
 			out.println("      <input type='submit' value='Send'>");
 			out.println("  </form>");
 			out.println("  </p>");
@@ -141,7 +148,7 @@ public class ManagerLogin extends HttpServlet {
 	            	if (imageId.equals(adminImageId)) {
 	            		out.println("<td> Admin Instance </td>");
 	            	} else {
-	            		out.println("<td><a href='InstanceStop?" + instanceId + "'>Stop </a></td>");
+	            		out.println("<td><a href='InstanceStop?" + instanceId + "'>Stop Worker</a></td>");
 	            		averageCpuLoad += cpuLoad / instanceIds.size();
 	            	}
 	            	out.println("</tr>");
@@ -187,12 +194,15 @@ public class ManagerLogin extends HttpServlet {
 			int cpuShrinkThresh = Integer.parseInt(request.getParameter("CPUShrink"));
 			int ratioGrow = Integer.parseInt(request.getParameter("RatioGrow"));
 			int ratioShrink = Integer.parseInt(request.getParameter("RatioShrink"));
+			int enableScaling = 0;
+			if (request.getParameter("EnableScaling") != null)
+				enableScaling = 1;
 			
     		HealthMonitor.cpuHighThreshold = cpuGrowThresh;
     		HealthMonitor.cpuLowThreshold = cpuShrinkThresh;
     		HealthMonitor.growRatio = ratioGrow;
     		HealthMonitor.shrinkRatio = ratioShrink;
-    		HealthMonitor.enableScaling = 1;
+    		HealthMonitor.enableScaling = enableScaling;
 		} catch (NumberFormatException nfe) {
 		}
 

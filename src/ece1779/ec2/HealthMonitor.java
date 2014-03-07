@@ -27,8 +27,11 @@ public class HealthMonitor extends TimerTask {
 	public static int cpuLowThreshold;
 	public static int growRatio;
 	public static int shrinkRatio;
-
 	public static int enableScaling;
+	
+	public static int status;
+	public static String statusString;
+
 	public static String accessKey;
 	public static String secretKey;
 	public static String workerImageId;
@@ -49,13 +52,22 @@ public class HealthMonitor extends TimerTask {
 		  period = fONCE_PER_Hour;
 	  
 	  Timer timer = new Timer();
-	  timer.scheduleAtFixedRate(healthMonitor, 0*1000, period); /* start timer after 10 second delay */
+	  timer.scheduleAtFixedRate(healthMonitor, 10*1000 , period); /* start timer after 10 second delay */
   }
 
   /**
   * Implements TimerTask's abstract run method.
   */
   @Override public void run(){
+
+	  if (enableScaling == 0)
+		  return;
+
+	  //wait 60 seconds before scaling operations
+	  if (scaler.getTimeSinceLastScale() <= 60 * 1000)
+		  return;
+	  
+	  HealthMonitor.status = 20;
 	  
 	  double cpuLoad = scaler.getCpuLoad();
 	  
@@ -74,21 +86,22 @@ public class HealthMonitor extends TimerTask {
 }
 
 class LoadScaler {
-	private static final String imageId = "ami-2d888444";
-	private static final String keyName = "ece1779winter2014v3";
-	private static final String loadBalancerName = "BouzeloufBalancer";
 
 	private BasicAWSCredentials awsCredentials;
 	
+	private Date lastScaled;
+	
 	public LoadScaler() {
 		awsCredentials = new BasicAWSCredentials(HealthMonitor.accessKey, HealthMonitor.secretKey);
+
+		lastScaled = new Date(0);
 	}
 	
 	public double getCpuLoad() {
 		
 		double averageCpuLoad = 0;
 
-    	try {    		
+    	try {
     		List<String> instanceIds = HelperMethods.getRunningInstances(
     				this.awsCredentials, HealthMonitor.workerImageId);
     		
@@ -107,9 +120,70 @@ class LoadScaler {
 	}
 	
 	public void growInstances(int growRatio) {
+		try {    		
+    		List<String> instanceIds = HelperMethods.getRunningInstances(
+    				this.awsCredentials, HealthMonitor.workerImageId);
+    		
+    		int numInstancesToAdd = 0;
+    		int numRunningInstances = instanceIds.size();
+    		if (numRunningInstances <= 0) {
+    			numInstancesToAdd = 1;
+    		} else {
+    			numInstancesToAdd = numRunningInstances * growRatio - numRunningInstances;
+    		}
+    		
+    		if (numInstancesToAdd <= 0)
+    			return;
+    		
+    		for (int i = 0; i < numInstancesToAdd; i++) {
+    			HelperMethods.startInstance(this.awsCredentials, HealthMonitor.workerImageId, null);
+    		}
+    		
+    		this.lastScaled = new Date();
+    		
+    		HealthMonitor.status = 50;
+
+        } catch (AmazonServiceException ase) {
+        } catch (AmazonClientException ace) {
+        }
 	}
 	
 	public void shrinkInstances(int shrinkRatio) {
+		
+		try {
+
+    		List<String> instanceIds = HelperMethods.getRunningInstances(
+    				this.awsCredentials, HealthMonitor.workerImageId);
+    		
+    		int numRunningInstances = instanceIds.size();
+    		if (numRunningInstances <= 0 || shrinkRatio <= 0)
+    			return;
+    		
+    		int shrinkedInstanceCount = (int) Math.ceil(numRunningInstances / shrinkRatio);
+    		if (shrinkedInstanceCount <= 0)
+    			shrinkedInstanceCount = 1;
+    		
+    		int numInstancesToStop = numRunningInstances - shrinkedInstanceCount;
+    		if (numInstancesToStop <= 0)
+    			return;
+    		
+    		for (int i = 0; i < numInstancesToStop; i++) {
+    			HelperMethods.stopInstance(this.awsCredentials, instanceIds.get(i), null);
+    		}
+
+    		this.lastScaled = new Date();
+    		
+    		HealthMonitor.status = 100;
+
+        } catch (AmazonServiceException ase) {
+        } catch (AmazonClientException ace) {
+        }
+
+	}
+	
+	public long getTimeSinceLastScale() {
+		Date endTime = new Date();
+		return (endTime.getTime() - this.lastScaled.getTime());
 	}
 }
 
