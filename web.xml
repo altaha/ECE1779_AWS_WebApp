@@ -240,6 +240,12 @@
         <servlet-name>UserFileUpload</servlet-name>
         <url-pattern>/servlet/UserFileUpload</url-pattern>
     </servlet-mapping>
+    
+    <servlet-mapping>
+        <servlet-name>UserFileUpload</servlet-name>
+        <url-pattern>/servlet/FileUpload</url-pattern>
+    </servlet-mapping>
+ 
  
      <servlet-mapping>
         <servlet-name>UserImageAndTransforms</servlet-name>

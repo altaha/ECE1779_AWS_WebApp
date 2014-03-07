@@ -67,7 +67,7 @@ public class UserFileUpload extends HttpServlet {
 			out.println("  <body>");
 			
 			out.println("    <h1>Upload File</h1>");
-			out.println("    <form action='/ece1779/servlet/UserFileUpload'  enctype='multipart/form-data' method='post'>");
+			out.println("    <form action='/ece1779/servlet/FileUpload'  enctype='multipart/form-data' method='post'>");
 			out.println("      User ID <input type='text' name='userID' value='"+username+"'><br />"); //TODO: do we need this?
 			out.println("      What is the image files to upload? <input type='file' name='theFile'><br />");
 			out.println("      <input type='submit' value='Send'>");
