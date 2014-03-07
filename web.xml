@@ -81,7 +81,7 @@
 		
 		<init-param>
 			<param-name>WorkerAmiName</param-name>
-			<param-value>ami-bouzeloufW</param-value>
+			<param-value>ami-89545be0</param-value>
 		</init-param>
   	</servlet>
 
