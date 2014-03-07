@@ -1,5 +1,6 @@
 package ece1779.ec2;
 
+import java.io.PrintWriter;
 import java.util.Date;
 import java.util.List;
 import java.util.Arrays;
@@ -12,6 +13,12 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.model.*;
+import com.amazonaws.services.elasticloadbalancing.AmazonElasticLoadBalancing;
+import com.amazonaws.services.elasticloadbalancing.AmazonElasticLoadBalancingClient;
+import com.amazonaws.services.elasticloadbalancing.model.DeregisterInstancesFromLoadBalancerRequest;
+import com.amazonaws.services.elasticloadbalancing.model.DeregisterInstancesFromLoadBalancerResult;
+import com.amazonaws.services.elasticloadbalancing.model.RegisterInstancesWithLoadBalancerRequest;
+import com.amazonaws.services.elasticloadbalancing.model.RegisterInstancesWithLoadBalancerResult;
 import com.amazonaws.services.cloudwatch.AmazonCloudWatch;
 import com.amazonaws.services.cloudwatch.AmazonCloudWatchClient;
 import com.amazonaws.services.cloudwatch.model.Datapoint;
@@ -112,5 +119,73 @@ public class HelperMethods {
     	
     	return 0;
 	}
+	
+	public static void startInstance (BasicAWSCredentials awsCredentials, String imageId,
+			PrintWriter out)
+		throws AmazonServiceException, AmazonClientException {
+		
+		AmazonEC2 ec2 = new AmazonEC2Client(awsCredentials);
+		AmazonElasticLoadBalancing loadBalancer = new  AmazonElasticLoadBalancingClient(awsCredentials);
+		
+    	RunInstancesRequest request = new RunInstancesRequest(imageId,1,1);
+    	request.setKeyName("ece1779winter2014v3");
+    	request.withMonitoring(true);
+    	
+    	String securityGroup = "ece1779security";
+    	List<String> securityGroups = Arrays.asList(securityGroup);
+    	request.setSecurityGroupIds(securityGroups);
 
+    	/* create new instance */
+    	RunInstancesResult result = ec2.runInstances(request);
+    	Reservation reservation = result.getReservation();
+    	List<Instance> instances = reservation.getInstances();
+    	Instance inst = instances.get(0);
+    	
+    	/* add to Load Balancer */
+    	String balancerName = "BouzeloufBalancer";
+    	com.amazonaws.services.elasticloadbalancing.model.Instance balanceInstance =
+    		new com.amazonaws.services.elasticloadbalancing.model.Instance(inst.getInstanceId());
+        List <com.amazonaws.services.elasticloadbalancing.model.Instance> balanceInstances =
+        	Arrays.asList(balanceInstance);
+
+    	RegisterInstancesWithLoadBalancerRequest balancerRequest =
+    			new RegisterInstancesWithLoadBalancerRequest(balancerName, balanceInstances);
+    	RegisterInstancesWithLoadBalancerResult balancerResult = loadBalancer.registerInstancesWithLoadBalancer(balancerRequest);
+
+    	if (out != null) {
+    		out.println("<p>New Instance Info: </p>");
+    		out.println("<p> " + inst.toString() + " </p>");
+    		out.println("<p>Load Balancer Registration Info: </p>");
+    		out.println("<p> " + balancerResult.toString() + " </p>");
+    	}
+	}
+	
+	public static void stopInstance (BasicAWSCredentials awsCredentials, String instanceId,
+			PrintWriter out)
+		throws AmazonServiceException, AmazonClientException {
+	
+		AmazonEC2 ec2 = new AmazonEC2Client(awsCredentials);
+		AmazonElasticLoadBalancing loadBalancer = new  AmazonElasticLoadBalancingClient(awsCredentials);
+
+		/* remove from load balancer */
+		String balancerName = "BouzeloufBalancer";
+    	com.amazonaws.services.elasticloadbalancing.model.Instance balanceInstance =
+    		new com.amazonaws.services.elasticloadbalancing.model.Instance(instanceId);
+        List <com.amazonaws.services.elasticloadbalancing.model.Instance> balanceInstances = Arrays.asList(balanceInstance);
+
+    	DeregisterInstancesFromLoadBalancerRequest balancerRequest =
+    			new DeregisterInstancesFromLoadBalancerRequest(balancerName, balanceInstances);
+    	DeregisterInstancesFromLoadBalancerResult balancerResult =
+    		loadBalancer.deregisterInstancesFromLoadBalancer(balancerRequest);
+		
+		/* terminate instance */
+		List<String> instanceIdList = Arrays.asList(instanceId);
+		TerminateInstancesRequest request = new TerminateInstancesRequest(instanceIdList);
+		TerminateInstancesResult result = ec2.terminateInstances(request);
+		
+		if (out != null) {
+			out.println("<p>Terminated instanceId " + instanceId + "</p>");
+			out.println("<p>" + result.toString() + "</p>");
+		}
+	}
 }

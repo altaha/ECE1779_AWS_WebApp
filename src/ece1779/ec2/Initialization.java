@@ -56,6 +56,7 @@ public class Initialization extends HttpServlet {
     		// start periodic monitoring task
     		HealthMonitor.secretKey = secretKey;
     		HealthMonitor.accessKey = accessKey;
+    		HealthMonitor.workerImageId = workerImageId;
     		HealthMonitor.cpuHighThreshold = 80;
     		HealthMonitor.cpuLowThreshold = 20;
     		HealthMonitor.growRatio = 1;

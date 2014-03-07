@@ -50,40 +50,12 @@ public class InstanceStart extends HttpServlet {
     void doInstanceStart(PrintWriter out) throws IOException {
  	
 		BasicAWSCredentials awsCredentials = (BasicAWSCredentials)getServletContext().getAttribute("AWSCredentials");
-
-		AmazonEC2 ec2 = new AmazonEC2Client(awsCredentials);
-		AmazonElasticLoadBalancing loadBalancer = new  AmazonElasticLoadBalancingClient(awsCredentials);
 		
 		try {
-        	String imageId = "ami-2d888444";
-        	RunInstancesRequest request = new RunInstancesRequest(imageId,1,1);
-        	request.setKeyName("ece1779winter2014v3");
-        	request.withMonitoring(true);
+			String imageId = (String)getServletContext().getAttribute("workerImageId");
+
+			HelperMethods.startInstance(awsCredentials, imageId, out);
         	
-        	String securityGroup = "ece1779security";
-        	List<String> securityGroups = Arrays.asList(securityGroup);
-        	request.setSecurityGroupIds(securityGroups);
-
-        	/* create new instance */
-        	RunInstancesResult result = ec2.runInstances(request);
-        	Reservation reservation = result.getReservation();
-        	List<Instance> instances = reservation.getInstances();
-        	Instance inst = instances.get(0);
-        	
-        	/* add to Load Balancer */
-        	String balancerName = "BouzeloufBalancer";
-        	com.amazonaws.services.elasticloadbalancing.model.Instance balanceInstance = new com.amazonaws.services.elasticloadbalancing.model.Instance(inst.getInstanceId());
-            List <com.amazonaws.services.elasticloadbalancing.model.Instance> balanceInstances = Arrays.asList(balanceInstance);
-
-        	RegisterInstancesWithLoadBalancerRequest balancerRequest =
-        			new RegisterInstancesWithLoadBalancerRequest(balancerName, balanceInstances);
-        	RegisterInstancesWithLoadBalancerResult balancerResult = loadBalancer.registerInstancesWithLoadBalancer(balancerRequest);
-
-        	out.println("<p>New Instance Info: </p>");
-        	out.println("<p> " + inst.toString() + " </p>");
-        	out.println("<p>Load Balancer Registration Info: </p>");
-        	out.println("<p> " + balancerResult.toString() + " </p>");
-
 			out.println("<br>");
 			out.println("<p><a href='ManagerLogin'>Manager Page</a></p>");
 

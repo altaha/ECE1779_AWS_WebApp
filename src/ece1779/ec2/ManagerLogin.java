@@ -80,7 +80,6 @@ public class ManagerLogin extends HttpServlet {
 			out.println("	   CPU Shrink Threshold   <input type='text' name='CPUShrink' value='" + HealthMonitor.cpuLowThreshold + "'/><br />");
 			out.println("	   Pool Grow Ratio     <input type='text' name='RatioGrow' value='" + HealthMonitor.growRatio + "'/><br />");
 			out.println("	   Pool Shrink Ratio   <input type='text' name='RatioShrink' value='" + HealthMonitor.shrinkRatio + "'/><br />");
-			out.println("	   Pool Last CPU Average   <input type='text' name='lastAvgCPU' value='" + HealthMonitor.lastAvgCPU + "'/><br />");
 			out.println("      <input type='submit' value='Send'>");
 			out.println("  </form>");
 			out.println("  </p>");
@@ -126,6 +125,8 @@ public class ManagerLogin extends HttpServlet {
     	imageIDs.add(adminImageId);
     	imageIDs.add(workerImageId);
     	
+    	double averageCpuLoad = 0;
+    	
     	try {
 	    	for (String imageId : imageIDs) {
 	    		List<String> instanceIds = HelperMethods.getRunningInstances(awsCredentials, imageId);
@@ -141,6 +142,7 @@ public class ManagerLogin extends HttpServlet {
 	            		out.println("<td> Admin Instance </td>");
 	            	} else {
 	            		out.println("<td><a href='InstanceStop?" + instanceId + "'>Stop </a></td>");
+	            		averageCpuLoad += cpuLoad / instanceIds.size();
 	            	}
 	            	out.println("</tr>");
 	    		}
@@ -161,6 +163,7 @@ public class ManagerLogin extends HttpServlet {
         }
     	finally {
     		out.println("</table>");
+    		out.println("<pr> Average Worker CPU load = " + averageCpuLoad + "</p>");
     	}
 	}
 	

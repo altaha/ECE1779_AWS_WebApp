@@ -52,32 +52,9 @@ public class InstanceStop extends HttpServlet {
 		
 		BasicAWSCredentials awsCredentials = (BasicAWSCredentials)getServletContext().getAttribute("AWSCredentials");
 
-		AmazonEC2 ec2 = new AmazonEC2Client(awsCredentials);
-		AmazonElasticLoadBalancing loadBalancer = new  AmazonElasticLoadBalancingClient(awsCredentials);
-		
-		/* the manager instance cannot be stopped */
-    	if (instanceId.equals("i-7dce8d53")) {
-    		out.println("Cannot terminate main instance");
-    		return;
-    	}
-		
 		try {
-			/* remove fro load balancer */
-			String balancerName = "BouzeloufBalancer";
-        	com.amazonaws.services.elasticloadbalancing.model.Instance balanceInstance = new com.amazonaws.services.elasticloadbalancing.model.Instance(instanceId);
-            List <com.amazonaws.services.elasticloadbalancing.model.Instance> balanceInstances = Arrays.asList(balanceInstance);
-
-        	DeregisterInstancesFromLoadBalancerRequest balancerRequest =
-        			new DeregisterInstancesFromLoadBalancerRequest(balancerName, balanceInstances);
-        	DeregisterInstancesFromLoadBalancerResult balancerResult = loadBalancer.deregisterInstancesFromLoadBalancer(balancerRequest);
+			HelperMethods.stopInstance(awsCredentials, instanceId, out);
 			
-			/* terminate instance */
-			List<String> instanceIdList = Arrays.asList(instanceId);
-			TerminateInstancesRequest request = new TerminateInstancesRequest(instanceIdList);
-			TerminateInstancesResult result = ec2.terminateInstances(request);
-			
-			out.println("<p>Terminated instanceId " + instanceId + "</p>");
-			out.println("<p>" + result.toString() + "</p>");
 			out.println("<br>");
 			out.println("<p><a href='ManagerLogin'>Manager Page</a></p>");
 			

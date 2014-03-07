@@ -23,7 +23,6 @@ import com.amazonaws.services.cloudwatch.model.*;
 public class HealthMonitor extends TimerTask {
 	
 	//public
-	public static double lastAvgCPU;
 	public static int cpuHighThreshold;
 	public static int cpuLowThreshold;
 	public static int growRatio;
@@ -32,6 +31,7 @@ public class HealthMonitor extends TimerTask {
 	public static int enableScaling;
 	public static String accessKey;
 	public static String secretKey;
+	public static String workerImageId;
 	
 
   /** Construct and use a TimerTask and Timer. */
@@ -86,70 +86,24 @@ class LoadScaler {
 	
 	public double getCpuLoad() {
 		
-		double cpu_avg = 100;
+		double averageCpuLoad = 0;
 
-        AmazonCloudWatch cw = new AmazonCloudWatchClient(this.awsCredentials);
-
-    	/* print instance entries */
-    	try {
-
-    		/* Filter for instances running our AMI */
-    		List<DimensionFilter> amiFilter = new ArrayList<DimensionFilter>();
-    		amiFilter.add(new DimensionFilter().withName("ImageId").withValue(imageId));
+    	try {    		
+    		List<String> instanceIds = HelperMethods.getRunningInstances(
+    				this.awsCredentials, HealthMonitor.workerImageId);
     		
-    		ListMetricsRequest listMetricsRequest = new ListMetricsRequest();
-        	listMetricsRequest.setMetricName("CPUUtilization");
-        	listMetricsRequest.setNamespace("AWS/EC2");
-        	listMetricsRequest.setDimensions(amiFilter);
-
-        	ListMetricsResult result = cw.listMetrics(listMetricsRequest);
-        	java.util.List<Metric> 	metrics = result.getMetrics();
-
-        	for (Metric metric : metrics) {
-        		String namespace = metric.getNamespace();
-        		String metricName = metric.getMetricName();
-        		List<Dimension> dimensions = metric.getDimensions();
-        		
-            	GetMetricStatisticsRequest statisticsRequest = new GetMetricStatisticsRequest();
-            	statisticsRequest.setNamespace(namespace);
-            	statisticsRequest.setMetricName(metricName);
-            	statisticsRequest.setDimensions(dimensions);
-
-            	Date endTime = new Date();
-            	Date startTime = new Date(0);
-            	startTime.setTime(endTime.getTime()-120000); /* 2 minutes */
-
-            	statisticsRequest.setStartTime(startTime);
-            	statisticsRequest.setEndTime(endTime);
-            	statisticsRequest.setPeriod(60); /* 60 second granulatiry */
-            	Vector<String>statistics = new Vector<String>();
-            	statistics.add("Maximum");
-            	statisticsRequest.setStatistics(statistics);
-            	GetMetricStatisticsResult stats = cw.getMetricStatistics(statisticsRequest);
-            	
-            	/* get the latest CPU timestamp */
-            	List<Datapoint> dataPoints = stats.getDatapoints();
-            	Date latestTime = new Date(0);
-            	Datapoint latestPoint = null;
-            	for (Datapoint dataPoint : dataPoints) {
-            		if (dataPoint.getTimestamp().after(latestTime)) {
-            			latestTime = dataPoint.getTimestamp();
-            			latestPoint = dataPoint;
-            		}
-            	}
-
-            	cpu_avg = latestPoint.getMaximum();
-        	}
+    		for (String instanceId : instanceIds) {
+    			averageCpuLoad += HelperMethods.getCPULoad(this.awsCredentials, instanceId);
+    		}
+    		
+    		if (instanceIds.size() > 0)
+    			averageCpuLoad /= instanceIds.size();
 
         } catch (AmazonServiceException ase) {
-        	cpu_avg = 200;
         } catch (AmazonClientException ace) {
-        	cpu_avg = 300; 
         }
-        
-        HealthMonitor.lastAvgCPU = cpu_avg;
-		
-		return cpu_avg;
+
+        return averageCpuLoad;
 	}
 	
 	public void growInstances(int growRatio) {
