@@ -80,8 +80,6 @@ public class ManagerLogin extends HttpServlet {
 			out.println("	   CPU Shrink Threshold   <input type='text' name='CPUShrink' value='" + HealthMonitor.cpuLowThreshold + "'/><br />");
 			out.println("	   Pool Grow Ratio     <input type='text' name='RatioGrow' value='" + HealthMonitor.growRatio + "'/><br />");
 			out.println("	   Pool Shrink Ratio   <input type='text' name='RatioShrink' value='" + HealthMonitor.shrinkRatio + "'/><br />");
-			out.println("	   Status <input type='text' name='MonitorStatus' value='" + HealthMonitor.status + "'/><br />");
-			out.println("	   Status <input type='text' name='MonitorStatusString' value='" + HealthMonitor.statusString + "'/><br />");
 			out.println("	   Enable Load Scaling   <input type='checkbox' name='EnableScaling' value='enabled' ");
 				if  (HealthMonitor.enableScaling == 1)
 					out.println("checked='yes' /><br />");

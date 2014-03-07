@@ -28,9 +28,6 @@ public class HealthMonitor extends TimerTask {
 	public static int growRatio;
 	public static int shrinkRatio;
 	public static int enableScaling;
-	
-	public static int status;
-	public static String statusString;
 
 	public static String accessKey;
 	public static String secretKey;
@@ -52,7 +49,7 @@ public class HealthMonitor extends TimerTask {
 		  period = fONCE_PER_Hour;
 	  
 	  Timer timer = new Timer();
-	  timer.scheduleAtFixedRate(healthMonitor, 10*1000 , period); /* start timer after 10 second delay */
+	  timer.scheduleAtFixedRate(healthMonitor, 0, period);
   }
 
   /**
@@ -66,8 +63,6 @@ public class HealthMonitor extends TimerTask {
 	  //wait 60 seconds before scaling operations
 	  if (scaler.getTimeSinceLastScale() <= 60 * 1000)
 		  return;
-	  
-	  HealthMonitor.status = 20;
 	  
 	  double cpuLoad = scaler.getCpuLoad();
 	  
@@ -95,6 +90,15 @@ class LoadScaler {
 		awsCredentials = new BasicAWSCredentials(HealthMonitor.accessKey, HealthMonitor.secretKey);
 
 		lastScaled = new Date(0);
+		
+		//start a worker instance if non are currently running
+		/*
+		List<String> instanceIds = HelperMethods.getRunningInstances(
+				this.awsCredentials, HealthMonitor.workerImageId);
+		
+		if (instanceIds.size() <= 0)
+			HelperMethods.startInstance(this.awsCredentials, HealthMonitor.workerImageId, null);
+		*/
 	}
 	
 	public double getCpuLoad() {
@@ -140,8 +144,6 @@ class LoadScaler {
     		}
     		
     		this.lastScaled = new Date();
-    		
-    		HealthMonitor.status = 50;
 
         } catch (AmazonServiceException ase) {
         } catch (AmazonClientException ace) {
@@ -172,8 +174,6 @@ class LoadScaler {
     		}
 
     		this.lastScaled = new Date();
-    		
-    		HealthMonitor.status = 100;
 
         } catch (AmazonServiceException ase) {
         } catch (AmazonClientException ace) {

@@ -57,11 +57,12 @@ public class Initialization extends HttpServlet {
     		HealthMonitor.secretKey = secretKey;
     		HealthMonitor.accessKey = accessKey;
     		HealthMonitor.workerImageId = workerImageId;
-    		HealthMonitor.cpuHighThreshold = 80;
-    		HealthMonitor.cpuLowThreshold = 20;
+    		HealthMonitor.cpuHighThreshold = 20;
+    		HealthMonitor.cpuLowThreshold = 5;
     		HealthMonitor.growRatio = 1;
     		HealthMonitor.shrinkRatio = 1;
     		HealthMonitor.enableScaling = 1;
+    		/* comment out next line for worker AMI */
     		HealthMonitor.startTimer(1000*5); /* 5 second check interval */
 		}
 		catch (Exception ex) {
