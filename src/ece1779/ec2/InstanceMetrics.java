@@ -119,7 +119,7 @@ public class InstanceMetrics extends HttpServlet {
     		
     		/* Filter for instances running our AMI */
     		List<DimensionFilter> amiFilter = new ArrayList<DimensionFilter>();
-    		amiFilter.add(new DimensionFilter().withName("ImageId").withValue("ami-01f4cf68"));
+    		amiFilter.add(new DimensionFilter().withName("ImageId").withValue("ami-2d888444"));
     		
     		ListMetricsRequest listMetricsRequest = new ListMetricsRequest();
         	listMetricsRequest.setMetricName("CPUUtilization");

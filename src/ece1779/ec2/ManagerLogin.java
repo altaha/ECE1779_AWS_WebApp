@@ -72,20 +72,14 @@ public class ManagerLogin extends HttpServlet {
 			out.println("  </form>");
 			out.println("  </p>");
 		    out.println("  <br>");
-/*		    
-		    out.println("  <p>");
-		    out.println("  <form id='pool_frm' name=pool_size action='/ece1779/servlet/ManagerLogin' method='post'>");
-		    out.println("  Pool size :");
-			out.println("  <button type='submit' name='poolSize' value='1'>Increase</button>");
-			out.println("  <button type='submit' name='poolSize' value='0'>Decrease</button>");
-			out.println("  </p>");
-*/
+
 			out.println("  <p> Instance Scaling Control Paramseters <br />");
 			out.println("  <form id='control_frm' name='pool_manage' action='/ece1779/servlet/ManagerLogin' method='post'>");
 			out.println("	   CPU Grow Threshold   <input type='text' name='CPUGrow' value='" + HealthMonitor.cpuHighThreshold + "'/><br />");
 			out.println("	   CPU Shrink Threshold   <input type='text' name='CPUShrink' value='" + HealthMonitor.cpuLowThreshold + "'/><br />");
 			out.println("	   Pool Grow Ratio     <input type='text' name='RatioGrow' value='" + HealthMonitor.growRatio + "'/><br />");
 			out.println("	   Pool Shrink Ratio   <input type='text' name='RatioShrink' value='" + HealthMonitor.shrinkRatio + "'/><br />");
+			out.println("	   Pool Last CPU Average   <input type='text' name='lastAvgCPU' value='" + HealthMonitor.lastAvgCPU + "'/><br />");
 			out.println("      <input type='submit' value='Send'>");
 			out.println("  </form>");
 			out.println("  </p>");

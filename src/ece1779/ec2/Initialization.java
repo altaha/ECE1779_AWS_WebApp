@@ -48,12 +48,14 @@ public class Initialization extends HttpServlet {
     		context.setAttribute("s3BucketName",s3BucketName);
     		
     		// start periodic monitoring task
+    		HealthMonitor.secretKey = secretKey;
+    		HealthMonitor.accessKey = accessKey;
     		HealthMonitor.cpuHighThreshold = 80;
     		HealthMonitor.cpuLowThreshold = 20;
     		HealthMonitor.growRatio = 1;
     		HealthMonitor.shrinkRatio = 1;
     		HealthMonitor.enableScaling = 1;
-    		HealthMonitor.startTimer(1000*2); /* 5 second check interval */
+    		HealthMonitor.startTimer(1000*5); /* 5 second check interval */
 		}
 		catch (Exception ex) {
 		    getServletContext().log("SQLGatewayPool Error: " + ex.getMessage());

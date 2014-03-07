@@ -22,27 +22,17 @@ import com.amazonaws.services.cloudwatch.model.*;
 
 public class HealthMonitor extends TimerTask {
 	
-	//public static HealthMonitorTimer periodicMonitor;
-	
+	//public
+	public static double lastAvgCPU;
 	public static int cpuHighThreshold;
 	public static int cpuLowThreshold;
 	public static int growRatio;
 	public static int shrinkRatio;
+
 	public static int enableScaling;
+	public static String accessKey;
+	public static String secretKey;
 	
-	private static int timerStarted;
-	
-	private static LoadScaler scaler;
-	
-	/* public void doPost(HttpServletRequest request, HttpServletResponse response)
-			throws IOException, ServletException {
-		doPost(request, response);
-	} */
-/*}
-
-
-class HealthMonitorTimer extends TimerTask {
-*/
 
   /** Construct and use a TimerTask and Timer. */
   public static void startTimer (long period) {
@@ -59,7 +49,7 @@ class HealthMonitorTimer extends TimerTask {
 		  period = fONCE_PER_Hour;
 	  
 	  Timer timer = new Timer();
-	  timer.scheduleAtFixedRate(healthMonitor, 0, period);
+	  timer.scheduleAtFixedRate(healthMonitor, 0*1000, period); /* start timer after 10 second delay */
   }
 
   /**
@@ -76,27 +66,90 @@ class HealthMonitorTimer extends TimerTask {
 	  }
   }
 
-  // PRIVATE
+  //PRIVATE
+  private static int timerStarted;
+  private static LoadScaler scaler;
 
-  //expressed in milliseconds
-  private final static long fONCE_PER_Hour = 1000*60*60;
+  private final static long fONCE_PER_Hour = 1000*60*60; //in milliseconds
 }
 
 class LoadScaler {
-	private static final String imageId = "ami-1f4e4d76";
+	private static final String imageId = "ami-2d888444";
 	private static final String keyName = "ece1779winter2014v3";
 	private static final String loadBalancerName = "BouzeloufBalancer";
-	
-	private int cpuAvg;
-	private int numInstances;
+
+	private BasicAWSCredentials awsCredentials;
 	
 	public LoadScaler() {
-		cpuAvg = 0;
-		numInstances = 0;
+		awsCredentials = new BasicAWSCredentials(HealthMonitor.accessKey, HealthMonitor.secretKey);
 	}
 	
 	public double getCpuLoad() {
-		return 0;
+		
+		double cpu_avg = 100;
+
+        AmazonCloudWatch cw = new AmazonCloudWatchClient(this.awsCredentials);
+
+    	/* print instance entries */
+    	try {
+
+    		/* Filter for instances running our AMI */
+    		List<DimensionFilter> amiFilter = new ArrayList<DimensionFilter>();
+    		amiFilter.add(new DimensionFilter().withName("ImageId").withValue(imageId));
+    		
+    		ListMetricsRequest listMetricsRequest = new ListMetricsRequest();
+        	listMetricsRequest.setMetricName("CPUUtilization");
+        	listMetricsRequest.setNamespace("AWS/EC2");
+        	listMetricsRequest.setDimensions(amiFilter);
+
+        	ListMetricsResult result = cw.listMetrics(listMetricsRequest);
+        	java.util.List<Metric> 	metrics = result.getMetrics();
+
+        	for (Metric metric : metrics) {
+        		String namespace = metric.getNamespace();
+        		String metricName = metric.getMetricName();
+        		List<Dimension> dimensions = metric.getDimensions();
+        		
+            	GetMetricStatisticsRequest statisticsRequest = new GetMetricStatisticsRequest();
+            	statisticsRequest.setNamespace(namespace);
+            	statisticsRequest.setMetricName(metricName);
+            	statisticsRequest.setDimensions(dimensions);
+
+            	Date endTime = new Date();
+            	Date startTime = new Date(0);
+            	startTime.setTime(endTime.getTime()-1200000); /* 2 minutes */
+
+            	statisticsRequest.setStartTime(startTime);
+            	statisticsRequest.setEndTime(endTime);
+            	statisticsRequest.setPeriod(60); /* 60 second granulatiry */
+            	Vector<String>statistics = new Vector<String>();
+            	statistics.add("Maximum");
+            	statisticsRequest.setStatistics(statistics);
+            	GetMetricStatisticsResult stats = cw.getMetricStatistics(statisticsRequest);
+            	
+            	/* get the latest CPU timestamp */
+            	List<Datapoint> dataPoints = stats.getDatapoints();
+            	Date latestTime = new Date(0);
+            	Datapoint latestPoint = null;
+            	for (Datapoint dataPoint : dataPoints) {
+            		if (dataPoint.getTimestamp().after(latestTime)) {
+            			latestTime = dataPoint.getTimestamp();
+            			latestPoint = dataPoint;
+            		}
+            	}
+
+            	cpu_avg = latestPoint.getMaximum();
+        	}
+
+        } catch (AmazonServiceException ase) {
+        	cpu_avg = 200;
+        } catch (AmazonClientException ace) {
+        	cpu_avg = 300; 
+        }
+        
+        HealthMonitor.lastAvgCPU = cpu_avg;
+		
+		return cpu_avg;
 	}
 	
 	public void growInstances(int growRatio) {

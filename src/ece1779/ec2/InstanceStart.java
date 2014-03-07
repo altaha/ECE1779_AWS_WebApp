@@ -55,7 +55,7 @@ public class InstanceStart extends HttpServlet {
 		AmazonElasticLoadBalancing loadBalancer = new  AmazonElasticLoadBalancingClient(awsCredentials);
 		
 		try {
-        	String imageId = "ami-1f4e4d76";
+        	String imageId = "ami-2d888444";
         	RunInstancesRequest request = new RunInstancesRequest(imageId,1,1);
         	request.setKeyName("ece1779winter2014v3");
         	request.withMonitoring(true);
