@@ -72,6 +72,17 @@
 			<param-name>adminPassword</param-name>
 			<param-value>passQcom</param-value>
 		</init-param>
+		
+		<!-- AMI INFO -->
+		<init-param>
+			<param-name>AdminAmiName</param-name>
+			<param-value>ami-01f4cf68</param-value>
+		</init-param>
+		
+		<init-param>
+			<param-name>WorkerAmiName</param-name>
+			<param-value>ami-2d888444</param-value>
+		</init-param>
   	</servlet>
 
     <servlet>

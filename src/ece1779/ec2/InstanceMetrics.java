@@ -68,7 +68,7 @@ public class InstanceMetrics extends HttpServlet {
             	statisticsRequest.setDimensions(dimensions);
             	Date endTime = new Date();
             	Date startTime = new Date();
-            	startTime.setTime(endTime.getTime()-1200000);
+            	startTime.setTime(endTime.getTime()-120000);
             	statisticsRequest.setStartTime(startTime);
             	statisticsRequest.setEndTime(endTime);
             	statisticsRequest.setPeriod(60);

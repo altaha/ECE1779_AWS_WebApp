@@ -117,7 +117,7 @@ class LoadScaler {
 
             	Date endTime = new Date();
             	Date startTime = new Date(0);
-            	startTime.setTime(endTime.getTime()-1200000); /* 2 minutes */
+            	startTime.setTime(endTime.getTime()-120000); /* 2 minutes */
 
             	statisticsRequest.setStartTime(startTime);
             	statisticsRequest.setEndTime(endTime);

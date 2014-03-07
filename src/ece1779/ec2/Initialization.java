@@ -43,6 +43,12 @@ public class Initialization extends HttpServlet {
     		context.setAttribute("adminUserID",adminUserID);
     		context.setAttribute("adminPassword",adminPassword);
     		
+		    //store AMI names in context
+		    String adminImageId = config.getInitParameter("AdminAmiName");
+    		String workerImageId = config.getInitParameter("WorkerAmiName");
+    		context.setAttribute("adminImageId",adminImageId);
+    		context.setAttribute("workerImageId",workerImageId);
+    		
     		//store s3 bucket name
     		String s3BucketName = config.getInitParameter("s3BucketName");
     		context.setAttribute("s3BucketName",s3BucketName);

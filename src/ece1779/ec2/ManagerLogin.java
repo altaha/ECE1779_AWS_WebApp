@@ -18,6 +18,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Vector;
@@ -73,7 +74,7 @@ public class ManagerLogin extends HttpServlet {
 			out.println("  </p>");
 		    out.println("  <br>");
 
-			out.println("  <p> Instance Scaling Control Paramseters <br />");
+			out.println("  <p> Instance Scaling Control Parameters <br />");
 			out.println("  <form id='control_frm' name='pool_manage' action='/ece1779/servlet/ManagerLogin' method='post'>");
 			out.println("	   CPU Grow Threshold   <input type='text' name='CPUGrow' value='" + HealthMonitor.cpuHighThreshold + "'/><br />");
 			out.println("	   CPU Shrink Threshold   <input type='text' name='CPUShrink' value='" + HealthMonitor.cpuLowThreshold + "'/><br />");
@@ -106,6 +107,7 @@ public class ManagerLogin extends HttpServlet {
 	
 	public void printInstancesHealth(PrintWriter out)
 			throws IOException {
+
 		/* print table header */
     	out.println("<table style='width:60%' border='1'");
     	out.println("<tr bgcolor='silver'>");
@@ -116,71 +118,34 @@ public class ManagerLogin extends HttpServlet {
     	
     	/* print instances and CPU utilization */
     	BasicAWSCredentials awsCredentials = (BasicAWSCredentials)getServletContext().getAttribute("AWSCredentials");
-
-        AmazonCloudWatch cw = new AmazonCloudWatchClient(awsCredentials);
-
+    	
+    	String adminImageId =  (String)getServletContext().getAttribute("adminImageId");
+    	String workerImageId = (String)getServletContext().getAttribute("workerImageId");
+    	
+    	List<String> imageIDs = new ArrayList<String>();
+    	imageIDs.add(adminImageId);
+    	imageIDs.add(workerImageId);
+    	
     	try {
-    		ListMetricsRequest listMetricsRequest = new ListMetricsRequest();
-        	listMetricsRequest.setMetricName("CPUUtilization");
-        	listMetricsRequest.setNamespace("AWS/EC2");
-
-        	ListMetricsResult result = cw.listMetrics(listMetricsRequest);
-        	java.util.List<Metric> 	metrics = result.getMetrics();
-
-        	for (Metric metric : metrics) {
-        		String namespace = metric.getNamespace();
-        		String metricName = metric.getMetricName();
-        		List<Dimension> dimensions = metric.getDimensions();
-        		
-            	GetMetricStatisticsRequest statisticsRequest = new GetMetricStatisticsRequest();
-            	statisticsRequest.setNamespace(namespace);
-            	statisticsRequest.setMetricName(metricName);
-            	statisticsRequest.setDimensions(dimensions);
-
-            	Date endTime = new Date();
-            	Date startTime = new Date(0);
-            	startTime.setTime(endTime.getTime()-1200000); /* 2 minutes */
-            	statisticsRequest.setStartTime(startTime);
-            	statisticsRequest.setEndTime(endTime);
-            	statisticsRequest.setPeriod(60); /* 60 second granulatiry */
-
-            	Vector<String>statistics = new Vector<String>();
-            	statistics.add("Maximum");
-            	statisticsRequest.setStatistics(statistics);
-            	GetMetricStatisticsResult stats = cw.getMetricStatistics(statisticsRequest);
-            	
-            	/* only check metrics with dimension name 'InstanceId' */
-            	if (dimensions.isEmpty()==false && dimensions.get(0).getName().equals("InstanceId")
-            			&& stats.getDatapoints().size() >= 1) {
-            		
-            		//TODO: filter out terminated instances. Only running (and pending?) instances allowed
-            		
-            		String instanceId = dimensions.get(0).getValue();
-            		/* get the latest CPU timestamp */
-                	List<Datapoint> dataPoints = stats.getDatapoints();
-                	Date latestTime = new Date(0);
-                	Datapoint latestPoint = null;
-                	for (Datapoint dataPoint : dataPoints) {
-                		if (dataPoint.getTimestamp().after(latestTime)) {
-                			latestTime = dataPoint.getTimestamp();
-                			latestPoint = dataPoint;
-                		}
-                	}
-                	
-                	out.println("<tr>");
-                	out.println("<td> " + instanceId + " </td>");
-                	out.println("<td> " + latestPoint.getMaximum() + " </td>");
-                	/* the manager instance cannot be stopped */
-                	if (dimensions.get(0).getValue().equals("i-7dce8d53")) {
-                		out.println("<td> Main Instance </td>");
-                	} else {
-                		out.println("<td><a href='InstanceStop?" + instanceId + "'>Stop </a></td>");
-                	}
-                	out.println("</tr>");
-            	}
-        	}
-    		
-        } catch (AmazonServiceException ase) {
+	    	for (String imageId : imageIDs) {
+	    		List<String> instanceIds = HelperMethods.getRunningInstances(awsCredentials, imageId);
+	    		
+	    		for (String instanceId : instanceIds) {
+	    			double cpuLoad = HelperMethods.getCPULoad(awsCredentials, instanceId);
+	    			
+	            	out.println("<tr bgcolor='white'>");
+	            	out.println("<td> " + instanceId + " </td>");
+	            	out.println("<td> " + cpuLoad + " </td>");
+	            	/* the manager instance cannot be stopped */
+	            	if (imageId.equals(adminImageId)) {
+	            		out.println("<td> Admin Instance </td>");
+	            	} else {
+	            		out.println("<td><a href='InstanceStop?" + instanceId + "'>Stop </a></td>");
+	            	}
+	            	out.println("</tr>");
+	    		}
+	    	}
+    	} catch (AmazonServiceException ase) {
             out.println("Caught an AmazonServiceException, which means your request made it "
                     + "to Amazon EC2, but was rejected with an error response for some reason.");
             out.println("Error Message:    " + ase.getMessage());
