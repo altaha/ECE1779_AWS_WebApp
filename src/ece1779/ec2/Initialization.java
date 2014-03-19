@@ -63,7 +63,7 @@ public class Initialization extends HttpServlet {
     		HealthMonitor.shrinkRatio = 1;
     		HealthMonitor.enableScaling = 1;
     		/* comment out next line for worker AMI */
-    		HealthMonitor.startTimer(1000*5); /* 5 second check interval */
+    		HealthMonitor.startTimer(1000*20); /* 20 second check interval */
 		}
 		catch (Exception ex) {
 		    getServletContext().log("SQLGatewayPool Error: " + ex.getMessage());
